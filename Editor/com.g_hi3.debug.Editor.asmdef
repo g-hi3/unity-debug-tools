@@ -1,6 +1,6 @@
 {
     "name": "com.g_hi3.debug.Editor",
-    "rootNamespace": "",
+    "rootNamespace": "G_hi3.Debug.Editor",
     "references": [],
     "includePlatforms": [
         "Editor"

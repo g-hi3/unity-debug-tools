@@ -1,3 +1,14 @@
 {
-	"name": "com.g_hi3.debug.Tests"
+    "name": "com.g_hi3.debug.Tests",
+    "rootNamespace": "G_hi3.Debug.Tests",
+    "references": [],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
 }
