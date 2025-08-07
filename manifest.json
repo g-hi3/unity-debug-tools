@@ -1,0 +1,19 @@
+{
+    "name": "com.g_hi3.debug",
+    "version": "0.0.0",
+    "description": "Provides various utilities that can be used to debug Unity projects.",
+    "displayName": "Unity Debug Tools",
+    "unity": "6000.0",
+    "author": {
+        "name": "Marc Forrer",
+        "email": "marc.forrer@bluewin.ch",
+        "url": "https://github.com/g-hi3"
+    },
+    "dependencies": {},
+    "hideInEditor": true,
+    "keywords": [ "debug", "visualize", "visualization" ],
+    "license": "GPL-3.0-or-later",
+    "samples": [],
+    "unityRelease": "45f1"
+}
+
