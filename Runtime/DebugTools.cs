@@ -71,13 +71,31 @@ namespace G_hi3.Debug
             var unitLength = segmentLength + segmentSpacing;
             var offset = Time.time * timeScale % unitLength;
             var distanceTravelled = offset;
-            
-            // TODO: If `timeScale` > 0, no segments are drawn in `offset`.
-            //       This should be solved with a loop,
-            //       because if the `segmentSpacing` is greater than multiple `segmentLength`s,
-            //       multiple segments might be missing.
-            
-            // TODO: If `timeScale` is < 0, the first segment overshoots at the start.
+
+            if (distanceTravelled < 0f)
+            {
+                var n = (int)(-distanceTravelled % unitLength);
+                distanceTravelled += n * unitLength;
+                
+                if (segmentLength > -distanceTravelled)
+                {
+                    var offsetSegmentLength = distanceTravelled + segmentLength;
+                    var segmentEnd = start + offsetSegmentLength * direction;
+                    DrawSegment(start, segmentEnd, segmentColor, depthTest);
+                }
+
+                distanceTravelled += unitLength;
+            }
+            else if (distanceTravelled > 0f)
+            {
+                var offsetSegmentLength = distanceTravelled - segmentSpacing;
+                
+                if (offsetSegmentLength > 0)
+                {
+                    var segmentEnd = start + offsetSegmentLength * direction;
+                    DrawSegment(start, segmentEnd, segmentColor, depthTest);
+                }
+            }
 
             while (distanceTravelled < deltaLength)
             {
