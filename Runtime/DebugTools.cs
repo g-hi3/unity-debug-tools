@@ -7,6 +7,31 @@ namespace G_hi3.Debug
     /// </summary>
     public static class DebugTools
     {
+        public static void DrawSegmentedRectangle(
+            Vector3 position,
+            Quaternion rotation,
+            Vector2 scale,
+            float segmentLength = 0.2f,
+            float segmentSpacing = 0.1f,
+            Color segmentColor = default,
+            float timeScale = 0f,
+            bool depthTest = true)
+        {
+#if DEBUG
+            // TODO: In some cases with big `segmentLength` values, the line overshoots or draws a segment too long.
+            var a = 0.5f * new Vector3(scale.x, 0f, scale.y);
+            var b = 0.5f * new Vector3(scale.x, 0f, -scale.y);
+            var topLeft = position + rotation * -b;
+            var bottomLeft = position + rotation * -a;
+            var bottomRight = position + rotation * b;
+            var topRight = position + rotation * a;
+            DrawSegmentedLine(topLeft, bottomLeft, segmentLength, segmentSpacing, segmentColor, timeScale, depthTest);
+            DrawSegmentedLine(bottomLeft, bottomRight, segmentLength, segmentSpacing, segmentColor, timeScale, depthTest);
+            DrawSegmentedLine(bottomRight, topRight, segmentLength, segmentSpacing, segmentColor, timeScale, depthTest);
+            DrawSegmentedLine(topRight, topLeft, segmentLength, segmentSpacing, segmentColor, timeScale, depthTest);
+#endif
+        }
+        
         /// <summary>
         /// <para>
         /// Draws a segmented line between two points in world space.
