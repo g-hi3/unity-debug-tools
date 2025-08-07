@@ -7,28 +7,76 @@ namespace G_hi3.Debug
     /// </summary>
     public static class DebugTools
     {
+        private const float DefaultSegmentLength = 0.4f;
+        private const float DefaultSegmentSpacing = 0.2f;
+        private const float DefaultTimeScale = 0f;
+        private const bool DefaultDepthTest = true;
+        private const bool DefaultLoop = false;
+        
         public static void DrawSegmentedRectangle(
             Vector3 position,
             Quaternion rotation,
             Vector2 scale,
-            float segmentLength = 0.2f,
-            float segmentSpacing = 0.1f,
+            float segmentLength = DefaultSegmentLength,
+            float segmentSpacing = DefaultSegmentSpacing,
             Color segmentColor = default,
-            float timeScale = 0f,
-            bool depthTest = true)
+            float timeScale = DefaultTimeScale,
+            bool depthTest = DefaultDepthTest)
         {
 #if DEBUG
             // TODO: In some cases with big `segmentLength` values, the line overshoots or draws a segment too long.
-            var a = 0.5f * new Vector3(scale.x, 0f, scale.y);
-            var b = 0.5f * new Vector3(scale.x, 0f, -scale.y);
-            var topLeft = position + rotation * -b;
-            var bottomLeft = position + rotation * -a;
-            var bottomRight = position + rotation * b;
-            var topRight = position + rotation * a;
-            DrawSegmentedLine(topLeft, bottomLeft, segmentLength, segmentSpacing, segmentColor, timeScale, depthTest);
-            DrawSegmentedLine(bottomLeft, bottomRight, segmentLength, segmentSpacing, segmentColor, timeScale, depthTest);
-            DrawSegmentedLine(bottomRight, topRight, segmentLength, segmentSpacing, segmentColor, timeScale, depthTest);
-            DrawSegmentedLine(topRight, topLeft, segmentLength, segmentSpacing, segmentColor, timeScale, depthTest);
+            var halfScale = 0.5f * scale;
+            var a = new Vector3(halfScale.x, 0f, halfScale.y);
+            var b = new Vector3(halfScale.x, 0f, -halfScale.y);
+            
+            var corners = new[]
+            {
+                position + rotation * -b,
+                position + rotation * -a,
+                position + rotation * b,
+                position + rotation * a
+            };
+            
+            DrawSegmentedPath(corners, segmentLength, segmentSpacing, segmentColor, timeScale, depthTest, true);
+#endif
+        }
+
+		public static void DrawSegmentedPath(
+            Vector3[] positions,
+            float segmentLength = DefaultSegmentLength,
+            float segmentSpacing = DefaultSegmentSpacing,
+            Color segmentColor = default,
+            float timeScale = DefaultTimeScale,
+            bool depthTest = DefaultDepthTest,
+            bool loop = DefaultLoop)
+		{
+#if DEBUG
+            if (positions.Length < 2)
+                return;
+            
+            for (var i = 0; i < positions.Length - 1; i++)
+            {
+                DrawSegmentedLine(
+                    positions[i],
+                    positions[i+1],
+                    segmentLength,
+                    segmentSpacing,
+                    segmentColor,
+                    timeScale,
+                    depthTest);
+            }
+
+            if (loop)
+            {
+                DrawSegmentedLine(
+                    positions[^1],
+                    positions[0],
+                    segmentLength,
+                    segmentSpacing,
+                    segmentColor,
+                    timeScale,
+                    depthTest);
+            }
 #endif
         }
         
@@ -69,11 +117,11 @@ namespace G_hi3.Debug
         public static void DrawSegmentedLine(
             Vector3 start,
             Vector3 end,
-            float segmentLength = 0.2f,
-            float segmentSpacing = 0.1f,
+            float segmentLength = DefaultSegmentLength,
+            float segmentSpacing = DefaultSegmentSpacing,
             Color segmentColor = default,
-            float timeScale = 0f,
-            bool depthTest = true)
+            float timeScale = DefaultTimeScale,
+            bool depthTest = DefaultDepthTest)
         {
 #if DEBUG
             if (segmentColor == default)
