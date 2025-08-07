@@ -31,7 +31,8 @@ namespace G_hi3.Debug
         /// <param name="depthTest">does not perform depth tests if <c>false</c></param>
         /// <remarks>
         /// <para>
-        /// If <paramref name="segmentLength"/> or <paramref name="segmentSpacing"/> is less or equal to 0,
+        /// Line drawing is skipped if <paramref name="segmentLength"/> is less than or equal to 0.
+        /// If <paramref name="segmentSpacing"/> is less or equal to 0,
         /// a single line-to operation will be performed from <paramref cref="start"/> to <paramref name="end"/>.
         /// </para>
         /// <para>
@@ -58,8 +59,11 @@ namespace G_hi3.Debug
             {
                 return;
             }
+
+            if (segmentLength <= 0f)
+                return;
             
-            if (segmentLength <= 0f || segmentSpacing <= 0f)
+            if (segmentSpacing <= 0f)
             {
                 DrawSegment(start, end, segmentColor, depthTest);
                 return;
