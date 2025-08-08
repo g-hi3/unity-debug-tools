@@ -13,6 +13,27 @@ namespace G_hi3.Debug
         private const bool DefaultDepthTest = true;
         private const bool DefaultLoop = false;
         
+        /// <summary>
+        /// <para>
+        /// Draws a segmented line between the corners of a rectangle in world space.
+        /// By default, the segmented rectangle is static,
+        /// but it can be animated using the <paramref name="timeScale"/> parameter.
+        /// </para>
+        /// <para>
+        /// A timescale of 1 means that the line segments move 1 world unit per second.
+        /// The default timescale of 0 means that the line segments are not animated.
+        /// There is no performance benefit of not animating the line segments
+        /// because the animation does not add any overhead. 
+        /// </para>
+        /// </summary>
+        /// <param name="position">the center of the rectangle in world space</param>
+        /// <param name="rotation">the rotation of the rectangle</param>
+        /// <param name="scale">the size of the rectangle (width, height)</param>
+        /// <param name="segmentLength">the length of unclipped segments in the line</param>
+        /// <param name="segmentSpacing">the length of spacing between line segments</param>
+        /// <param name="segmentColor">color of the line segments; default is white</param>
+        /// <param name="timeScale">determines the animation speed</param>
+        /// <param name="depthTest">does not perform depth tests if <c>false</c></param>
         public static void DrawSegmentedRectangle(
             Vector3 position,
             Quaternion rotation,
@@ -24,7 +45,6 @@ namespace G_hi3.Debug
             bool depthTest = DefaultDepthTest)
         {
 #if DEBUG
-            // TODO: In some cases with big `segmentLength` values, the line overshoots or draws a segment too long.
             var halfScale = 0.5f * scale;
             var a = new Vector3(halfScale.x, 0f, halfScale.y);
             var b = new Vector3(halfScale.x, 0f, -halfScale.y);
@@ -41,6 +61,26 @@ namespace G_hi3.Debug
 #endif
         }
 
+        /// <summary>
+        /// <para>
+        /// Draws a segmented line between two or more points in world space.
+        /// By default, the segmented path is static,
+        /// but it can be animated using the <paramref name="timeScale"/> parameter.
+        /// </para>
+        /// <para>
+        /// A timescale of 1 means that the line segments move 1 world unit per second.
+        /// The default timescale of 0 means that the line segments are not animated.
+        /// There is no performance benefit of not animating the line segments
+        /// because the animation does not add any overhead. 
+        /// </para>
+        /// </summary>
+        /// <param name="positions">all positions in the path</param>
+        /// <param name="segmentLength">the length of unclipped segments in the line</param>
+        /// <param name="segmentSpacing">the length of spacing between line segments</param>
+        /// <param name="segmentColor">color of the line segments; default is white</param>
+        /// <param name="timeScale">determines the animation speed</param>
+        /// <param name="depthTest">does not perform depth tests if <c>false</c></param>
+        /// <param name="loop">if <c>true</c>, connects the last point with the first</param>
 		public static void DrawSegmentedPath(
             Vector3[] positions,
             float segmentLength = DefaultSegmentLength,
@@ -54,26 +94,30 @@ namespace G_hi3.Debug
             if (positions.Length < 2)
                 return;
             
+            var overshoot = 0f;
+            
             for (var i = 0; i < positions.Length - 1; i++)
             {
-                DrawSegmentedLine(
+                overshoot = DrawSegmentedLineInternal(
                     positions[i],
                     positions[i+1],
                     segmentLength,
                     segmentSpacing,
                     segmentColor,
+                    overshoot,
                     timeScale,
                     depthTest);
             }
 
             if (loop)
             {
-                DrawSegmentedLine(
+                _ = DrawSegmentedLineInternal(
                     positions[^1],
                     positions[0],
                     segmentLength,
                     segmentSpacing,
                     segmentColor,
+                    overshoot,
                     timeScale,
                     depthTest);
             }
@@ -91,8 +135,6 @@ namespace G_hi3.Debug
         /// The default timescale of 0 means that the line segments are not animated.
         /// There is no performance benefit of not animating the line segments
         /// because the animation does not add any overhead. 
-        /// </para>
-        /// <para>
         /// </para>
         /// </summary>
         /// <param name="start">the line's starting point</param>
@@ -123,6 +165,27 @@ namespace G_hi3.Debug
             float timeScale = DefaultTimeScale,
             bool depthTest = DefaultDepthTest)
         {
+            _ = DrawSegmentedLineInternal(
+                start,
+                end,
+                segmentLength,
+                segmentSpacing,
+                segmentColor,
+                0f,
+                timeScale,
+                depthTest);
+        }
+
+        private static float DrawSegmentedLineInternal(
+            Vector3 start,
+            Vector3 end,
+            float segmentLength,
+            float segmentSpacing,
+            Color segmentColor,
+            float overshoot,
+            float timeScale,
+            bool depthTest)
+        {
 #if DEBUG
             if (segmentColor == default)
             {
@@ -130,47 +193,63 @@ namespace G_hi3.Debug
             }
             else if (segmentColor.a == 0f)
             {
-                return;
+                return 0f;
             }
 
             if (segmentLength <= 0f)
-                return;
+                return 0f;
+            
+            var delta = end - start;
+            var deltaLength = delta.magnitude;
             
             if (segmentSpacing <= 0f)
             {
                 DrawSegment(start, end, segmentColor, depthTest);
-                return;
+                return segmentSpacing - deltaLength;
             }
 
-            var delta = end - start;
-            var deltaLength = delta.magnitude;
             var direction = delta.normalized;
             var unitLength = segmentLength + segmentSpacing;
-            var offset = Time.time * timeScale % unitLength;
+
+            var offset = overshoot > 0f
+                ? overshoot
+                : Time.time * timeScale % unitLength;
+            
             var distanceTravelled = offset;
 
             if (distanceTravelled < 0f)
             {
+                // TODO: Is $n$ ever greater than 1 here?
                 var n = (int)(-distanceTravelled % unitLength);
+
+                if (n > 1)
+                    n = 1;
+
                 distanceTravelled += n * unitLength;
-                
-                if (segmentLength > -distanceTravelled)
+
+                if (segmentSpacing > -distanceTravelled)
                 {
-                    var offsetSegmentLength = distanceTravelled + segmentLength;
-                    var segmentEnd = start + offsetSegmentLength * direction;
-                    DrawSegment(start, segmentEnd, segmentColor, depthTest);
+                    // TODO: If `segmentLength` is large, the first line sometimes doesn't show this segment.
+                    var segmentEndDistance = Mathf.Clamp(distanceTravelled + segmentLength, 0f, deltaLength);
+                    var segmentEnd = start + segmentEndDistance * direction;
+                    var segmentStartDistance = Mathf.Clamp(distanceTravelled, 0f, deltaLength);
+                    var segmentStart = start + segmentStartDistance * direction;
+                    DrawSegment(segmentStart, segmentEnd, segmentColor, depthTest);
                 }
 
                 distanceTravelled += unitLength;
             }
             else if (distanceTravelled > 0f)
             {
-                var offsetSegmentLength = distanceTravelled - segmentSpacing;
+                var segmentEndDistance = distanceTravelled - segmentSpacing;
+                var offsetSegmentLength = Mathf.Min(segmentEndDistance, deltaLength);
                 
                 if (offsetSegmentLength > 0)
                 {
                     var segmentEnd = start + offsetSegmentLength * direction;
-                    DrawSegment(start, segmentEnd, segmentColor, depthTest);
+                    var segmentStartDistance = Mathf.Max(offsetSegmentLength - segmentLength, 0f);
+                    var segmentStart = start + segmentStartDistance * direction;
+                    DrawSegment(segmentStart, segmentEnd, segmentColor, depthTest);
                 }
             }
 
@@ -184,6 +263,8 @@ namespace G_hi3.Debug
                 DrawSegment(segmentStart, segmentEnd, segmentColor, depthTest);
                 distanceTravelled += unitLength;
             }
+
+            return distanceTravelled - deltaLength;
 #endif
         }
 
