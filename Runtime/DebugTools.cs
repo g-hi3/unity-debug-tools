@@ -12,6 +12,10 @@ namespace G_hi3.Debug
         private const float DefaultTimeScale = 0f;
         private const bool DefaultDepthTest = true;
         private const bool DefaultLoop = false;
+        private const uint DefaultSegmentCount = 4u;
+        private static readonly float[] QuadrantMultipliers = { 0f, 90f, 180f, 270f };
+        private static readonly Quaternion RightRotation = Quaternion.FromToRotation(Vector3.up, Vector3.right);
+        private static readonly Quaternion ForwardRotation = Quaternion.FromToRotation(Vector3.up, Vector3.forward);
         
         /// <summary>
         /// <para>
@@ -46,15 +50,14 @@ namespace G_hi3.Debug
         {
 #if DEBUG
             var halfScale = 0.5f * scale;
-            var a = new Vector3(halfScale.x, 0f, halfScale.y);
-            var b = new Vector3(halfScale.x, 0f, -halfScale.y);
+            var invertedHalfScale = new Vector3(halfScale.x, -halfScale.y, 0f);
             
             var corners = new[]
             {
-                position + rotation * -b,
-                position + rotation * -a,
-                position + rotation * b,
-                position + rotation * a
+                position + rotation * -invertedHalfScale,
+                position + rotation * -halfScale,
+                position + rotation * invertedHalfScale,
+                position + rotation * halfScale
             };
             
             DrawSegmentedPath(corners, segmentLength, segmentSpacing, segmentColor, timeScale, depthTest, true);
@@ -165,6 +168,7 @@ namespace G_hi3.Debug
             float timeScale = DefaultTimeScale,
             bool depthTest = DefaultDepthTest)
         {
+#if DEBUG
             _ = DrawSegmentedLineInternal(
                 start,
                 end,
@@ -174,8 +178,10 @@ namespace G_hi3.Debug
                 0f,
                 timeScale,
                 depthTest);
+#endif
         }
 
+#if DEBUG
         private static float DrawSegmentedLineInternal(
             Vector3 start,
             Vector3 end,
@@ -186,12 +192,11 @@ namespace G_hi3.Debug
             float timeScale,
             bool depthTest)
         {
-#if DEBUG
             if (segmentColor == default)
             {
                 segmentColor = Color.white;
             }
-            else if (segmentColor.a == 0f)
+            else if (segmentColor.a <= 0f)
             {
                 return 0f;
             }
@@ -265,13 +270,217 @@ namespace G_hi3.Debug
             }
 
             return distanceTravelled - deltaLength;
+        }
+
+        private static void DrawSegment(Vector3 start, Vector3 end, Color segmentColor, bool depthTest)
+        {
+            UnityEngine.Debug.DrawLine(start, end, segmentColor, 0f, depthTest);
+        }
+#endif
+        
+        /// <summary>
+        /// Draws a raycast with collision, if any.
+        /// </summary>
+        /// <param name="ray">ray to cast</param>
+        /// <param name="hit">the raycast hit, if any</param>
+        /// <param name="maxDistance">max distance to draw</param>
+        /// <param name="collisionSphereRadius">the radius of the drawn collision sphere</param>
+        /// <param name="segmentCount">number of segments per quadrant on the collision sphere</param>
+        /// <param name="hitColor">color of the ray between the origin and the hit, if any</param>
+        /// <param name="noHitColor">color of the ray after the hit, if there's remaining length or no hit</param>
+        /// <param name="collisionColor">color of the collision sphere</param>
+        /// <param name="duration">how long the line and sphere will be visible for in seconds</param>
+        /// <param name="depthTest">does not perform depth tests if <c>false</c></param>
+        public static void DrawRaycast(
+            Ray ray,
+            RaycastHit? hit = null,
+            float maxDistance = float.PositiveInfinity,
+            float collisionSphereRadius = 0.1f,
+            uint segmentCount = DefaultSegmentCount,
+            Color hitColor = default,
+            Color noHitColor = default,
+            Color collisionColor = default,
+            float duration = 0f,
+            bool depthTest = true)
+        {
+#if DEBUG
+            if (maxDistance < 0f)
+                return;
+
+            if (noHitColor == default)
+                noHitColor = Color.red;
+
+            if (!hit.HasValue)
+            {
+                UnityEngine.Debug.DrawRay(ray.origin, ray.direction * maxDistance, noHitColor, duration, depthTest);
+                return;
+            }
+
+            if (hitColor == default)
+                hitColor = Color.green;
+
+            if (collisionColor == default)
+                collisionColor = Color.blue;
+
+            var hitValue = hit.Value;
+            UnityEngine.Debug.DrawLine(ray.origin, hitValue.point, noHitColor, duration, depthTest);
+            var sphereScale = collisionSphereRadius * Vector3.one;
+            var sphereRotation = Quaternion.Euler(hitValue.normal);
+            DrawWireframeSphere(hitValue.point, sphereRotation, sphereScale, segmentCount, collisionColor, duration, depthTest);
+            var newRay = new Ray(hitValue.point, ray.direction);
+            DrawRay(newRay, maxDistance - hitValue.distance, hitColor, duration, depthTest);
 #endif
         }
 
 #if DEBUG
-        private static void DrawSegment(Vector3 start, Vector3 end, Color segmentColor, bool depthTest)
+        private static void DrawRay(Ray ray, float maxDistance, Color color, float duration, bool depthTest)
         {
-            UnityEngine.Debug.DrawLine(start, end, segmentColor, 0f, depthTest);
+            if (float.IsInfinity(maxDistance))
+            {
+                UnityEngine.Debug.DrawRay(ray.origin, ray.direction, color, duration, depthTest);
+            }
+            else
+            {
+                var end = ray.origin + maxDistance * ray.direction;
+                UnityEngine.Debug.DrawLine(ray.origin, end, color, duration, depthTest);
+            }
+        }
+#endif
+
+        /// <summary>
+        /// Draws a wireframe sphere
+        /// </summary>
+        /// <param name="position">center of the sphere</param>
+        /// <param name="rotation">rotation of the sphere around the <paramref name="position"/></param>
+        /// <param name="scale">scale of the sphere, independent of <paramref name="rotation"/></param>
+        /// <param name="segmentCount">number of segments per quadrant</param>
+        /// <param name="color">color of the sphere</param>
+        /// <param name="duration">how long the sphere will be visible for in seconds</param>
+        /// <param name="depthTest">does not perform depth tests if <c>false</c></param>
+        public static void DrawWireframeSphere(
+            Vector3 position,
+            Quaternion rotation = default,
+            Vector3 scale = default,
+            uint segmentCount = DefaultSegmentCount,
+            Color color = default,
+            float duration = 0f,
+            bool depthTest = true)
+        {
+#if DEBUG
+            if (rotation == default)
+                rotation = Quaternion.identity;
+
+            if (scale == default)
+            {
+                scale = Vector3.one;
+            }
+            else if (scale.sqrMagnitude == 0f)
+            {
+                return;
+            }
+
+            if (segmentCount < 1)
+                return;
+
+            if (color == default)
+            {
+                color = Color.white;
+            }
+            else if (color.a <= 0f)
+            {
+                return;
+            }
+
+            var xCircleScale = new Vector2(scale.y, scale.z);
+            var yCircleScale = new Vector2(scale.x, scale.z);
+            var zCircleScale = new Vector2(scale.x, scale.y);
+            var xCircleRotation = rotation * RightRotation;
+            var yCircleRotation = rotation;
+            var zCircleRotation = rotation * ForwardRotation;
+            DrawWireframeCircle(position, xCircleRotation, xCircleScale, segmentCount, color, duration, depthTest);
+            DrawWireframeCircle(position, yCircleRotation, yCircleScale, segmentCount, color, duration, depthTest);
+            DrawWireframeCircle(position, zCircleRotation, zCircleScale, segmentCount, color, duration, depthTest);
+#endif
+        }
+
+        /// <summary>
+        /// Draws a wireframe circle.
+        /// </summary>
+        /// <param name="position">center of the circle</param>
+        /// <param name="rotation">rotation of the circle around the <paramref name="position"/></param>
+        /// <param name="scale">scale of the circle, independent of <paramref name="rotation"/></param>
+        /// <param name="segmentCount">number of segments per quadrant</param>
+        /// <param name="color">color of the circle</param>
+        /// <param name="duration">how long the circle will be visible for in seconds</param>
+        /// <param name="depthTest">does not perform depth tests if <c>false</c></param>
+        public static void DrawWireframeCircle(
+            Vector3 position,
+            Quaternion rotation = default,
+            Vector2 scale = default,
+            uint segmentCount = DefaultSegmentCount,
+            Color color = default,
+            float duration = 0f,
+            bool depthTest = true)
+        {
+#if DEBUG
+            if (rotation == default)
+                rotation = Quaternion.identity;
+
+            if (scale == default)
+            {
+                scale = Vector2.one;
+            }
+            else if (scale.sqrMagnitude <= 0f)
+            {
+                return;
+            }
+
+            if (segmentCount < 1)
+                return;
+
+            if (color == default)
+            {
+                color = Color.white;
+            }
+            else if (color.a <= 0f)
+            {
+                return;
+            }
+            
+            // `rsMatrix` is a transformation that can be calculated once ahead of time.
+            // This saves multiplications per vertex.
+            var rotationMatrix = Matrix4x4.Rotate(rotation);
+            var scaleMatrix = Matrix4x4.Scale(new Vector3(scale.x, 1f, scale.y));
+            var rsMatrix = rotationMatrix * scaleMatrix;
+            
+            // The partition multiplier can be multiplied with a segment to get the angle within a quadrant.
+            var partitionMultiplier = 90f / segmentCount;
+            
+            // `fromPosition` always contains the "previous" `toPosition` and is calculated at the start.
+            // This is because every `toPosition` is the `fromPosition` of the next segment.
+            // By overriding this variable, the multiplications can be halved.
+            var fromPosition = position + GetPartitionTranslate(rsMatrix, 0f);
+            
+            foreach (var quadrantMultiplier in QuadrantMultipliers)
+            {
+                for (var segment = 1; segment <= segmentCount; segment++)
+                {
+                    var vertexAngleDeg = quadrantMultiplier + partitionMultiplier * segment;
+                    var toPosition = position + GetPartitionTranslate(rsMatrix, vertexAngleDeg);
+                    UnityEngine.Debug.DrawLine(fromPosition, toPosition, color, duration, depthTest);
+                    fromPosition = toPosition;
+                }
+            }
+#endif
+        }
+
+#if DEBUG
+        private static Vector3 GetPartitionTranslate(Matrix4x4 rsMatrix, float vertexAngleDeg)
+        {
+            var vertexAngleRad = Mathf.Deg2Rad * vertexAngleDeg;
+            var translate = new Vector3(Mathf.Cos(vertexAngleRad), 0f, Mathf.Sin(vertexAngleRad));
+            var rst = rsMatrix * translate;
+            return new Vector3(rst.x, rst.y, rst.z);
         }
 #endif
     }
