@@ -13,7 +13,6 @@ namespace G_hi3.Debug
         private const bool DefaultDepthTest = true;
         private const bool DefaultLoop = false;
         private const uint DefaultSegmentCount = 4u;
-        private static readonly float[] QuadrantMultipliers = { 0f, 90f, 180f, 270f };
         private static readonly Quaternion RightRotation = Quaternion.FromToRotation(Vector3.up, Vector3.right);
         private static readonly Quaternion ForwardRotation = Quaternion.FromToRotation(Vector3.up, Vector3.forward);
         
@@ -285,7 +284,7 @@ namespace G_hi3.Debug
         /// <param name="hit">the raycast hit, if any</param>
         /// <param name="maxDistance">max distance to draw</param>
         /// <param name="collisionSphereRadius">the radius of the drawn collision sphere</param>
-        /// <param name="segmentCount">number of segments per quadrant on the collision sphere</param>
+        /// <param name="segmentCount">number of segments per circle on the collision sphere</param>
         /// <param name="hitColor">color of the ray between the origin and the hit, if any</param>
         /// <param name="noHitColor">color of the ray after the hit, if there's remaining length or no hit</param>
         /// <param name="collisionColor">color of the collision sphere</param>
@@ -353,7 +352,7 @@ namespace G_hi3.Debug
         /// <param name="position">center of the sphere</param>
         /// <param name="rotation">rotation of the sphere around the <paramref name="position"/></param>
         /// <param name="scale">scale of the sphere, independent of <paramref name="rotation"/></param>
-        /// <param name="segmentCount">number of segments per quadrant</param>
+        /// <param name="segmentCount">number of segments per circle</param>
         /// <param name="color">color of the sphere</param>
         /// <param name="duration">how long the sphere will be visible for in seconds</param>
         /// <param name="depthTest">does not perform depth tests if <c>false</c></param>
@@ -409,7 +408,7 @@ namespace G_hi3.Debug
         /// <param name="position">center of the circle</param>
         /// <param name="rotation">rotation of the circle around the <paramref name="position"/></param>
         /// <param name="scale">scale of the circle, independent of <paramref name="rotation"/></param>
-        /// <param name="segmentCount">number of segments per quadrant</param>
+        /// <param name="segmentCount">number of segments on the circle</param>
         /// <param name="color">color of the circle</param>
         /// <param name="duration">how long the circle will be visible for in seconds</param>
         /// <param name="depthTest">does not perform depth tests if <c>false</c></param>
@@ -453,23 +452,20 @@ namespace G_hi3.Debug
             var scaleMatrix = Matrix4x4.Scale(new Vector3(scale.x, 1f, scale.y));
             var rsMatrix = rotationMatrix * scaleMatrix;
             
-            // The partition multiplier can be multiplied with a segment to get the angle within a quadrant.
-            var partitionMultiplier = 90f / segmentCount;
+            // The partition multiplier can be multiplied with a segment to get the vertex angle.
+            var partitionMultiplier = 360f / segmentCount;
             
             // `fromPosition` always contains the "previous" `toPosition` and is calculated at the start.
             // This is because every `toPosition` is the `fromPosition` of the next segment.
             // By overriding this variable, the multiplications can be halved.
             var fromPosition = position + GetPartitionTranslate(rsMatrix, 0f);
             
-            foreach (var quadrantMultiplier in QuadrantMultipliers)
+            for (var segment = 1; segment <= segmentCount; segment++)
             {
-                for (var segment = 1; segment <= segmentCount; segment++)
-                {
-                    var vertexAngleDeg = quadrantMultiplier + partitionMultiplier * segment;
-                    var toPosition = position + GetPartitionTranslate(rsMatrix, vertexAngleDeg);
-                    UnityEngine.Debug.DrawLine(fromPosition, toPosition, color, duration, depthTest);
-                    fromPosition = toPosition;
-                }
+                var vertexAngleDeg = partitionMultiplier * segment;
+                var toPosition = position + GetPartitionTranslate(rsMatrix, vertexAngleDeg);
+                UnityEngine.Debug.DrawLine(fromPosition, toPosition, color, duration, depthTest);
+                fromPosition = toPosition;
             }
 #endif
         }
