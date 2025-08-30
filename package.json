@@ -12,7 +12,6 @@
     "dependencies": {},
     "hideInEditor": true,
     "keywords": [ "debug", "visualize", "visualization" ],
-    "license": "GPL-3.0-or-later",
     "samples": [],
     "unityRelease": "45f1"
 }
