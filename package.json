@@ -17,6 +17,11 @@
             "displayName": "Segmented Line",
             "description": "Showcases a simple use case of the `DrawSegmentedLine` method of the `DebugTools` class.",
             "path": "Samples~/Segmented Line"
+        },
+        {
+            "displayName": "Segmented Path",
+            "description": "Showcases a simple use case of the `DrawSegmentedPath` method of the `DebugTools` class.",
+            "path": "Samples~/Segmented Path"
         }
     ],
     "unityRelease": "45f1"
