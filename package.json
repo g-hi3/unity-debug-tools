@@ -12,7 +12,13 @@
     "dependencies": {},
     "hideInEditor": true,
     "keywords": [ "debug", "visualize", "visualization" ],
-    "samples": [],
+    "samples": [
+        {
+            "displayName": "Segmented Line",
+            "description": "Showcases a simple use case of the `DrawSegmentedLine` method of the `DebugTools` class",
+            "path": "Samples~/Segmented Line"
+        }
+    ],
     "unityRelease": "45f1"
 }
 
