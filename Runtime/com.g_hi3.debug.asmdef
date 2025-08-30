@@ -1,5 +1,5 @@
 {
-    "name": "NewAssembly",
+    "name": "com.g_hi3.debug",
     "rootNamespace": "G_hi3.Debug",
     "references": [],
     "includePlatforms": [],

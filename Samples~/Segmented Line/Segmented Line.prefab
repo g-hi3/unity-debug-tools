@@ -9,7 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5777621284641819090}
-  - component: {fileID: 8860571525540249363}
+  - component: {fileID: 1275203835266532223}
   m_Layer: 0
   m_Name: Segmented Line
   m_TagString: Untagged
@@ -34,7 +34,7 @@ Transform:
   - {fileID: 2050032561573495760}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &8860571525540249363
+--- !u!114 &1275203835266532223
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -43,14 +43,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 3361149164360162771}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 681edf8489c24f40b3c63376d7d885e4, type: 3}
+  m_Script: {fileID: 11500000, guid: d8b127d6a61c57446a86e732115b5fd3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   start: {fileID: 1059853859406774618}
   end: {fileID: 2050032561573495760}
-  segmentColor: {r: 1, g: 0, b: 1, a: 1}
-  segmentLength: 0.5
-  segmentSpacing: 0.2
+  segmentColor: {r: 0, g: 1, b: 0, a: 1}
+  segmentLength: 0.2
+  segmentSpacing: 0.1
   timeScale: 1
   depthTest: 1
 --- !u!1 &5734252836503874027

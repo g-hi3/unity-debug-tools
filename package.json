@@ -15,7 +15,7 @@
     "samples": [
         {
             "displayName": "Segmented Line",
-            "description": "Showcases a simple use case of the `DrawSegmentedLine` method of the `DebugTools` class",
+            "description": "Showcases a simple use case of the `DrawSegmentedLine` method of the `DebugTools` class.",
             "path": "Samples~/Segmented Line"
         }
     ],
